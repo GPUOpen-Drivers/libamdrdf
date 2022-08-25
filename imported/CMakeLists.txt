@@ -1,4 +1,4 @@
-### Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved. ###
+### Copyright (c) 2021-2022 Advanced Micro Devices, Inc. All rights reserved. ###
 add_subdirectory(zstd)
 
 # This allows clients of RDF to have their own copy of catch2/cli11/json, and

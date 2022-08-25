@@ -1,4 +1,4 @@
-### Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved. ###
+### Copyright (c) 2021-2022 Advanced Micro Devices, Inc. All rights reserved. ###
 add_executable(rdfg)
 target_sources(rdfg PRIVATE
     src/rdfg.cpp)

@@ -1,4 +1,4 @@
-/* Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved. */
+/* Copyright (c) 2021-2022 Advanced Micro Devices, Inc. All rights reserved. */
 #include <catch2/catch.hpp>
 
 #include "amdrdf.h"

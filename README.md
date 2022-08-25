@@ -29,3 +29,11 @@ The `amdrdf` library provides the following forwards/backwards compatibility gua
 * A minor version can deprecate a function, but that function can be only removed in the next major release.
 
 Use `RDF_INTERFACE_VERSION` and `RDF_MAKE_VERSION` to check for the library version.
+
+## Changelog
+
+Interface-level changes only:
+
+* **1.0**: Initial release
+* **1.1**: Improve naming consistency: Add `rdfStreamFromUserStream`, mark `rdfStreamCreateFromUserStream` as deprecated
+  

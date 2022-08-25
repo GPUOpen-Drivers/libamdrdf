@@ -1,4 +1,4 @@
-/* Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved. */
+/* Copyright (c) 2021-2022 Advanced Micro Devices, Inc. All rights reserved. */
 #pragma once
 
 #include <cstddef>
@@ -24,7 +24,7 @@
     ((static_cast<std::uint32_t>(major) << 22) | \
      (static_cast<std::uint32_t>(minor) << 12))
 
-#define RDF_INTERFACE_VERSION RDF_MAKE_VERSION(1, 0)
+#define RDF_INTERFACE_VERSION RDF_MAKE_VERSION(1, 1)
 
 extern "C" {
 struct rdfChunkFile;
@@ -151,7 +151,18 @@ int RDF_EXPORT rdfStreamFromReadOnlyMemory(const std::int64_t size,
                                            const void* buffer,
                                            rdfStream** stream);
 int RDF_EXPORT rdfStreamCreateMemoryStream(rdfStream** stream);
+
+/**
+ * @deprecated Use `rdfStreamFromUserStream` instead
+ * 
+ * This entry point will be removed in the next major version
+ */
 int RDF_EXPORT rdfStreamCreateFromUserStream(const rdfUserStream* userStream, rdfStream** stream);
+
+/**
+ * @since 1.1
+ */
+int RDF_EXPORT rdfStreamFromUserStream(const rdfUserStream* userStream, rdfStream** stream);
 int RDF_EXPORT rdfStreamClose(rdfStream** stream);
 
 int RDF_EXPORT rdfStreamRead(rdfStream*,
@@ -322,6 +333,13 @@ public:
     {
         Stream result;
         RDF_CHECK_CALL(rdfStreamCreateMemoryStream(&result.stream_));
+        return result;
+    }
+
+    static Stream FromUserStream(const rdfUserStream* userStream)
+    {
+        Stream result;
+        RDF_CHECK_CALL(rdfStreamFromUserStream(userStream, &result.stream_));
         return result;
     }
 

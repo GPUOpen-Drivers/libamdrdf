@@ -1,4 +1,4 @@
-/* Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved. */
+/* Copyright (c) 2021-2022 Advanced Micro Devices, Inc. All rights reserved. */
 #include "amdrdf.h"
 
 #include <zstd/zstd.h>
@@ -1309,10 +1309,16 @@ int RDF_EXPORT rdfStreamCreateMemoryStream(rdfStream** handle)
 }
 
 //////////////////////////////////////////////////////////////////////////////
+int RDF_EXPORT rdfStreamCreateFromUserStream(const rdfUserStream* userStream, rdfStream** handle)
+{
+    return rdfStreamFromUserStream(userStream, handle);
+}
+
+//////////////////////////////////////////////////////////////////////////////
 /**
 Create a memory stream based on user provided callbacks.
 */
-int RDF_EXPORT rdfStreamCreateFromUserStream(const rdfUserStream* userStream, rdfStream** handle)
+int RDF_EXPORT rdfStreamFromUserStream(const rdfUserStream* userStream, rdfStream** handle)
 {
     RDF_C_API_BEGIN
 

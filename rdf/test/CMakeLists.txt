@@ -1,4 +1,4 @@
-### Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved. ###
+### Copyright (c) 2021-2022 Advanced Micro Devices, Inc. All rights reserved. ###
 add_executable(rdf.Test)
 target_sources(rdf.Test PRIVATE
     inc/test_rdf.h
