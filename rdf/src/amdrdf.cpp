@@ -332,11 +332,11 @@ namespace internal
 
             auto it = chunkTypeRange_.find(id);
             if (it == chunkTypeRange_.end()) {
-                throw std::runtime_error("Chunk not found");
+                return false;
             }
 
             if (chunkIndex >= (it->second.last - it->second.first)) {
-                throw std::runtime_error("Chunk index out of range");
+                return false;
             }
 
             return true;

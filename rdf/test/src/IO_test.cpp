@@ -93,6 +93,12 @@ TEST_CASE("rdf::LoadKnownGoodFile", "[rdf]")
     CHECK(cf.ContainsChunk("chunk1"));
     CHECK(cf.ContainsChunk("chunk2"));
 
+    CHECK(cf.ContainsChunk("chunk0", 0));
+    CHECK(cf.ContainsChunk("chunk0", 1));
+    CHECK(!cf.ContainsChunk("chunk0", 2));
+
+    CHECK(!cf.ContainsChunk("chunk3"));
+
     cf.ReadChunkData("chunk0", 0, [](size_t size, const void* data) -> void {
         CHECK(std::string(
             static_cast<const char*>(data),

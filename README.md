@@ -30,10 +30,10 @@ The `amdrdf` library provides the following forwards/backwards compatibility gua
 
 Use `RDF_INTERFACE_VERSION` and `RDF_MAKE_VERSION` to check for the library version.
 
-## Changelog
+Patch releases (for example, `1.1.1`) will be bumped for bug fixes and other improvements.
 
-Interface-level changes only:
+## Changelog
 
 * **1.0**: Initial release
 * **1.1**: Improve naming consistency: Add `rdfStreamFromUserStream`, mark `rdfStreamCreateFromUserStream` as deprecated
-  
+* **1.1.1**: Fix `rdfChunkFileContainsChunk` returning `rdfResultError` when a chunk was not found instead of `rdfResultOk`  
