@@ -20,7 +20,7 @@ int PrintChunkInfo(const std::string& input, bool outputJson)
             break;
         }
 
-        char identifier[RDF_IDENTIFIER_SIZE] = {};
+        char identifier[RDF_IDENTIFIER_SIZE + 1] = {};
         it.GetChunkIdentifier(identifier);
         const auto index = it.GetChunkIndex();
 

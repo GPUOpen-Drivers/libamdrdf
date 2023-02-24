@@ -37,3 +37,8 @@ Patch releases (for example, `1.1.1`) will be bumped for bug fixes and other imp
 * **1.0**: Initial release
 * **1.1**: Improve naming consistency: Add `rdfStreamFromUserStream`, mark `rdfStreamCreateFromUserStream` as deprecated
 * **1.1.1**: Fix `rdfChunkFileContainsChunk` returning `rdfResultError` when a chunk was not found instead of `rdfResultOk`  
+* **1.1.2**:
+  * Fix `rdfChunkFileWriterWriteChunk`, `rdfChunkFileWriterEndChunk` returning indices starting at 0 when in append mode instead of counting off the actual contents of the file
+  * Fix `rdfChunkFileWriterWriteChunk`, `rdfChunkFileWriterBeginChunk` returning an error when using identifiers of the maximum allowed length (i.e. without a trailing null-terminator.) and a non-zero header pointer
+  * Clients can now `#define RDF_CHECK_CALL` before including `amdrdf.h` to customize how errors are handled in the C++ bindings
+  * Move constructors in the C++ bindings have been marked as `noexcept`

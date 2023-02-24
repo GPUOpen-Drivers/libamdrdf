@@ -23,6 +23,23 @@ namespace rdf
 {
 namespace internal
 {
+    // Duplicated in the header, but we don't want to play public/private
+    // tricks to avoid a copy here given the function is so small
+    size_t SafeStringLength(const char* s, const size_t maxLength)
+    {
+        if (s == nullptr) {
+            return 0;
+        }
+
+        for (size_t i = 0; i < maxLength; ++i) {
+            if (s[i] == '\0') {
+                return i;
+            }
+        }
+
+        return maxLength;
+    }
+
     /**
     Check if the value v could have been a size_t-like type on the current
     platform. For 64-bit, it's always true, for 32-bit it checks if the value
@@ -165,7 +182,7 @@ namespace internal
         ChunkId(const char* id)
         {
             ::memset(id_, 0, sizeof(IdType));
-            const auto size = ::strlen(id);
+            const auto size = SafeStringLength(id, RDF_IDENTIFIER_SIZE);
             assert(size <= sizeof(IdType));
             ::memcpy(id_, id, size);
         }
@@ -574,11 +591,9 @@ namespace internal
             ChunkFile::IndexEntry entry;
             ::memset(&entry, 0, sizeof(entry));
 
-            if (::strlen(chunkIdentifier) > sizeof(entry.chunkIdentifier)) {
-                throw std::runtime_error("Chunk identifier must be <= 16 characters in length.");
-            }
-            // Without trailing \0!
-            ::memcpy(entry.chunkIdentifier, chunkIdentifier, ::strlen(chunkIdentifier));
+            // Without trailing \0, which is fine because it's memset to 0
+            ::memcpy(entry.chunkIdentifier, chunkIdentifier,
+                SafeStringLength(chunkIdentifier, RDF_IDENTIFIER_SIZE));
 
             entry.compression = compression;
             entry.version = version;
@@ -731,6 +746,12 @@ namespace internal
                 chunks_.resize(header_.indexSize / sizeof(ChunkFile::IndexEntry));
                 stream_->Seek(header_.indexOffset);
                 stream_->Read(header_.indexSize, chunks_.data());
+
+                // Initialize the counts so the returned index is correct
+                for (const auto& chunk : chunks_) {
+                    ChunkId id (chunk.chunkIdentifier);
+                    chunkCountPerType_[id] += 1;
+                }
 
                 dataWriteOffset_ = header_.indexOffset;
                 stream_->Seek(dataWriteOffset_);

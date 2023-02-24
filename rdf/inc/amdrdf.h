@@ -25,7 +25,7 @@
      (static_cast<std::uint32_t>(minor) << 12) | \
      (static_cast<std::uint32_t>(patch)))
 
-#define RDF_INTERFACE_VERSION RDF_MAKE_VERSION(1, 1, 1)
+#define RDF_INTERFACE_VERSION RDF_MAKE_VERSION(1, 1, 2)
 
 extern "C" {
 struct rdfChunkFile;
@@ -283,6 +283,7 @@ private:
     rdfResult result_;
 };
 
+#ifndef RDF_CHECK_CALL
 #define RDF_CHECK_CALL(c)                                        \
     do {                                                         \
         const auto r_ = c;                                       \
@@ -290,6 +291,7 @@ private:
             throw rdf::ApiException(static_cast<rdfResult>(r_)); \
         }                                                        \
     } while (0)
+#endif
 
 class Stream final
 {
@@ -413,13 +415,13 @@ public:
         return stream_;
     }
 
-    Stream(Stream&& rhs)
+    Stream(Stream&& rhs) noexcept
     {
         stream_ = rhs.stream_;
         rhs.stream_ = nullptr;
     }
 
-    Stream& operator=(Stream&& rhs)
+    Stream& operator=(Stream&& rhs) noexcept
     {
         stream_ = rhs.stream_;
         rhs.stream_ = nullptr;
@@ -447,13 +449,13 @@ class ChunkFileIterator final
 public:
     ChunkFileIterator(rdfChunkFileIterator* iterator) : it_(iterator) {}
 
-    ChunkFileIterator(ChunkFileIterator&& rhs)
+    ChunkFileIterator(ChunkFileIterator&& rhs) noexcept
     {
         it_ = rhs.it_;
         rhs.it_ = nullptr;
     }
 
-    ChunkFileIterator& operator=(ChunkFileIterator&& rhs)
+    ChunkFileIterator& operator=(ChunkFileIterator&& rhs) noexcept
     {
         it_ = rhs.it_;
         rhs.it_ = nullptr;
@@ -526,13 +528,13 @@ public:
     ChunkFile(const ChunkFile&) = delete;
     ChunkFile& operator=(const ChunkFile&) = delete;
 
-    ChunkFile(ChunkFile&& rhs)
+    ChunkFile(ChunkFile&& rhs) noexcept
     {
         chunkFile_ = rhs.chunkFile_;
         rhs.chunkFile_ = nullptr;
     }
 
-    ChunkFile& operator=(ChunkFile&& rhs)
+    ChunkFile& operator=(ChunkFile&& rhs) noexcept
     {
         chunkFile_ = rhs.chunkFile_;
         rhs.chunkFile_ = nullptr;
@@ -740,8 +742,8 @@ public:
                    const std::uint32_t version)
     {
         rdfChunkCreateInfo info = {};
-        ::memcpy(
-            info.identifier, chunkId, std::min(std::strlen(chunkId), (size_t)RDF_IDENTIFIER_SIZE));
+        ::memcpy(info.identifier, chunkId,
+            SafeStringLength(chunkId, RDF_IDENTIFIER_SIZE));
         info.headerSize = chunkHeaderSize;
         info.pHeader = chunkHeader;
         info.compression = compression;
@@ -775,8 +777,8 @@ public:
                     const std::uint32_t version)
     {
         rdfChunkCreateInfo info = {};
-        ::memcpy(
-            info.identifier, chunkId, std::min(std::strlen(chunkId), (size_t)RDF_IDENTIFIER_SIZE));
+        ::memcpy(info.identifier, chunkId,
+            SafeStringLength(chunkId, RDF_IDENTIFIER_SIZE));
         info.headerSize = chunkHeaderSize;
         info.pHeader = chunkHeader;
         info.compression = compression;
@@ -806,6 +808,21 @@ public:
 
 private:
     rdfChunkFileWriter* writer_ = nullptr;
+
+    size_t SafeStringLength(const char* s, const size_t maxLength)
+    {
+        if (s == nullptr) {
+            return 0;
+        }
+
+        for (size_t i = 0; i < maxLength; ++i) {
+            if (s[i] == '\0') {
+                return i;
+            }
+        }
+
+        return maxLength;
+    }
 };
 }  // namespace rdf
 #endif

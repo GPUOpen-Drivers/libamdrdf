@@ -3,6 +3,8 @@ add_executable(rdf.Test)
 target_sources(rdf.Test PRIVATE
     inc/test_rdf.h
     src/IO_test.cpp
+    src/RDF_test.cpp
+    src/test_file.c
     src/main.cpp
 )
 
