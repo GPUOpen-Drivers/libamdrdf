@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <functional>
 #include <memory>
@@ -25,7 +26,7 @@
      (static_cast<std::uint32_t>(minor) << 12) | \
      (static_cast<std::uint32_t>(patch)))
 
-#define RDF_INTERFACE_VERSION RDF_MAKE_VERSION(1, 1, 2)
+#define RDF_INTERFACE_VERSION RDF_MAKE_VERSION(1, 1, 3)
 
 extern "C" {
 struct rdfChunkFile;
