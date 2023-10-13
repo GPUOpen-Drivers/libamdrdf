@@ -1,5 +1,5 @@
 /* Copyright (c) 2021-2022 Advanced Micro Devices, Inc. All rights reserved. */
-#include <catch2/catch.hpp>
+#include <catch.hpp>
 
 #include "amdrdf.h"
 
@@ -89,6 +89,8 @@ TEST_CASE("rdfUserStream", "[rdf]")
     {
         std::int64_t bytesRead = 0;
         std::int64_t bytesWritten = 0;
+
+        bool isClosed = false;
     } ctx;
 
     rdfUserStream us = {};
@@ -115,6 +117,11 @@ TEST_CASE("rdfUserStream", "[rdf]")
         return rdfResultOk;
     };
 
+    us.Close = [](void* context) -> int {
+        static_cast<Context*>(context)->isClosed = true;
+        return rdfResultOk;
+    };
+
     us.GetSize = [](void*, std::int64_t*) -> int { return rdfResultOk; };
     us.Tell = [](void*, std::int64_t*) -> int { return rdfResultOk; };
     us.Seek = [](void*, std::int64_t) -> int { return rdfResultOk; };
@@ -130,6 +137,9 @@ TEST_CASE("rdfUserStream", "[rdf]")
     CHECK(ctx.bytesWritten == 256);
 
     rdfStreamClose(&stream);
+
+    // Our close sets "isClosed"
+    CHECK(ctx.isClosed);
 }
 
 TEST_CASE("ChunkFileWriter with write-only stream", "[rdf]")
@@ -231,4 +241,50 @@ TEST_CASE("rdfUserStream required functions", "[rdf]")
         CHECK(rdfStreamCreateFromUserStream(&us, &stream) != rdfResultOk);
         CHECK(stream == nullptr);
     }
+}
+
+TEST_CASE("rdfUserStream Close() can throw", "[rdf]")
+{
+    /*
+    Check that we can throw from Close(), and we can catch that, and still
+    repeat the Close() and correctly close the stream.
+    */
+
+    bool shouldThrow = true;
+
+    rdfUserStream us = {};
+    us.GetSize = [](void* ctx, int64_t* o) -> int {
+        return rdfResultOk;
+    };
+    us.Read = [](void* ctx, int64_t c, void* p, int64_t* o) -> int { 
+        return rdfResultOk;
+    };
+    us.Write = [](void* ctx, int64_t c, const void* p, int64_t* o) -> int {
+        return rdfResultOk;
+    };
+    us.Seek = [](void* ctx, int64_t o) -> int {
+        return rdfResultOk;
+    };
+    us.Tell = [](void* ctx, int64_t* p) -> int {
+        *p = 0;
+        return rdfResultOk;
+    };
+    us.Close = [](void* ctx) -> int {
+        if (*static_cast<bool*>(ctx)) {
+            throw 23;
+        }
+
+        return rdfResultOk;
+    };
+    us.context = &shouldThrow;
+
+    rdfStream* stream;
+    rdfStreamCreateFromUserStream(&us, &stream);
+
+    CHECK(rdfStreamClose(&stream) != rdfResultOk);
+    REQUIRE(stream != nullptr);
+
+    shouldThrow = false;
+    CHECK(rdfStreamClose(&stream) == rdfResultOk);
+    CHECK(stream == nullptr);
 }

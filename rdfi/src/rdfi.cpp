@@ -1,6 +1,6 @@
 /* Copyright (c) 2021-2022 Advanced Micro Devices, Inc. All rights reserved. */
-#include <cli11/CLI11.hpp>
-#include <json/json.hpp>
+#include <CLI/CLI.hpp>
+#include <nlohmann/json.hpp>
 
 #include "amdrdf.h"
 

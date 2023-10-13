@@ -45,3 +45,8 @@ Patch releases (for example, `1.1.1`) will be bumped for bug fixes and other imp
 * **1.1.3**:
   * Fix missing includes on GCC13
   * Update `Zstd` dependency from 1.4.5 to 1.5.5
+* **1.2.0**
+  * Add support for [VCPKG](https://vcpkg.io/)
+    * The library can be now consumed via VCPKG
+    * The build can optionally use VCPKG to fetch dependencies
+  * Add a new `Close` callback function to `rdfUserStream`. This allows wrapped user streams to clean up the wrapped object, making it easier to track lifetime.
