@@ -1,4 +1,4 @@
-### Copyright (c) 2021-2022 Advanced Micro Devices, Inc. All rights reserved. ###
+### Copyright (c) 2021-2024 Advanced Micro Devices, Inc. All rights reserved. ###
 if (RDF_STATIC)
     add_library(amdrdf STATIC)
 else()

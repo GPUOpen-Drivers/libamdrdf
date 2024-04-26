@@ -1,5 +1,5 @@
-/* Copyright (c) 2021-2022 Advanced Micro Devices, Inc. All rights reserved. */
-#include <catch.hpp>
+/* Copyright (c) 2021-2024 Advanced Micro Devices, Inc. All rights reserved. */
+#include <catch2/catch.hpp>
 
 #include "amdrdf.h"
 
@@ -59,6 +59,62 @@ TEST_CASE("rdf::GetChunkCount", "[rdf]")
     rdf::ChunkFile cf(ms);
     CHECK(cf.GetChunkCount("chunk0") == 2);
     CHECK(cf.GetChunkCount("chunk1") == 0);
+}
+
+TEST_CASE("rdf::GetChunk* error handling", "[rdf]")
+{
+    /*
+    * Obviously invalid chunk identifiers -- meaning, name is a nullptr, or
+    * index is negative, should fail with an invalid argument error, but also
+    * be safe to use, as-in, they don't modify the arguments passed in.
+    */
+    auto ms = rdf::Stream::CreateMemoryStream();
+
+    rdf::ChunkFileWriter writer(ms);
+    writer.WriteChunk("chunk0", 0, nullptr, 0, nullptr, rdfCompressionNone, 1);
+    writer.Close();
+
+    rdf::ChunkFile cf(ms);
+
+    {
+        int r = 0;
+        CHECK(rdfChunkFileContainsChunk(static_cast<rdfChunkFile*>(cf), nullptr, 0, &r) ==
+              rdfResultInvalidArgument);
+        REQUIRE(r == 0);
+        CHECK(rdfChunkFileContainsChunk(static_cast<rdfChunkFile*>(cf), "foo", -1, &r) ==
+              rdfResultInvalidArgument);
+        CHECK(r == 0);
+    }
+
+    {
+        std::int64_t s = 0;
+        CHECK(rdfChunkFileGetChunkDataSize(static_cast<rdfChunkFile*>(cf), nullptr, 0, &s) ==
+              rdfResultInvalidArgument);
+        REQUIRE(s == 0);
+        CHECK(rdfChunkFileGetChunkDataSize(static_cast<rdfChunkFile*>(cf), "foo", -1, &s) ==
+              rdfResultInvalidArgument);
+        CHECK(s == 0);
+    }
+
+    {
+        std::int64_t s = 0;
+        CHECK(rdfChunkFileGetChunkHeaderSize(static_cast<rdfChunkFile*>(cf), nullptr, 0, &s) ==
+              rdfResultInvalidArgument);
+        REQUIRE(s == 0);
+        CHECK(rdfChunkFileGetChunkHeaderSize(static_cast<rdfChunkFile*>(cf), "foo", -1, &s) ==
+              rdfResultInvalidArgument);
+        CHECK(s == 0);
+    }
+
+    {
+        uint32_t v = 0;
+        CHECK(rdfChunkFileGetChunkVersion(static_cast<rdfChunkFile*>(cf), nullptr, 0, &v) ==
+              rdfResultInvalidArgument);
+        REQUIRE(v == 0);
+        CHECK(rdfChunkFileGetChunkVersion(static_cast<rdfChunkFile*>(cf), "foo", -1, &v) ==
+              rdfResultInvalidArgument);
+        CHECK(v == 0);
+    }
 }
 
 TEST_CASE("rdf::ChunkFileIterator", "[rdf]")
@@ -236,4 +292,42 @@ TEST_CASE("rdf::ChunkFileWriter append increments index", "[rdf]")
     rdf::ChunkFile cf(ms);
     CHECK(cf.ContainsChunk("chunk", 0));
     CHECK(cf.ContainsChunk("chunk", 1));
+}
+
+TEST_CASE("rdf::ChunkFileWriter writes of zero size work with nullptr", "[rdf]")
+{
+    auto ms = rdf::Stream::CreateMemoryStream();
+
+    {
+        rdf::ChunkFileWriter writer(ms);
+        writer.WriteChunk("chunk-nh", 0, nullptr, 1, "D");
+        writer.WriteChunk("chunk-nb", 1, "D", 0, nullptr);
+        writer.WriteChunk("chunk-nh-nb", 0, nullptr, 0, nullptr);
+        writer.Close();
+    }
+
+    rdf::ChunkFile cf(ms);
+    CHECK(cf.ContainsChunk("chunk-nh", 0));
+    CHECK(cf.ContainsChunk("chunk-nb", 0));
+    CHECK(cf.ContainsChunk("chunk-nh-nb", 0));
+
+    CHECK(cf.GetChunkHeaderSize("chunk-nh", 0) == 0);
+    CHECK(cf.GetChunkHeaderSize("chunk-nb", 0) == 1);
+    CHECK(cf.GetChunkHeaderSize("chunk-nh-nb", 0) == 0);
+
+    CHECK(cf.GetChunkDataSize("chunk-nh", 0) == 1);
+    CHECK(cf.GetChunkDataSize("chunk-nb", 0) == 0);
+    CHECK(cf.GetChunkDataSize("chunk-nh-nb", 0) == 0);
+
+    CHECK_NOTHROW(cf.ReadChunkHeaderToBuffer("chunk-nh", 0, nullptr));
+    CHECK_NOTHROW(cf.ReadChunkDataToBuffer("chunk-nb", 0, nullptr));
+    CHECK_NOTHROW(cf.ReadChunkDataToBuffer("chunk-nh-nb", 0, nullptr));
+
+    // Those want to read actual data
+    CHECK_THROWS(cf.ReadChunkHeaderToBuffer("chunk-nb", 0, nullptr));
+    CHECK_THROWS(cf.ReadChunkDataToBuffer("chunk-nh", 0, nullptr));
+
+    // Those want to read data into a nullptr buffer
+    CHECK_THROWS(cf.ReadChunkHeaderToBuffer("chunk-nb", 1, nullptr));
+    CHECK_THROWS(cf.ReadChunkDataToBuffer("chunk-nh", 1, nullptr));
 }
