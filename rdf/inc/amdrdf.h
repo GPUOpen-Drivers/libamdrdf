@@ -65,6 +65,7 @@ struct rdfStreamFromFileCreateInfo
     const char* filename;
     rdfStreamAccess accessMode;
     rdfFileMode fileMode;
+    bool is_shareable;
 };
 
 /**
@@ -338,6 +339,7 @@ public:
         info.filename = filename;
         info.fileMode = fileMode;
         info.accessMode = streamAccess;
+        info.is_shareable = false;
 
         RDF_CHECK_CALL(rdfStreamFromFile(&info, &result.stream_));
         return result;

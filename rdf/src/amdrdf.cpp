@@ -9,6 +9,16 @@
 #include <limits>
 #include <stdexcept>
 
+#if RDF_PLATFORM_WINDOWS
+// Define NOMINMAX to prevent conflict between <limits> and <windows.h> include files.
+#define NOMINMAX
+
+#include <corecrt_io.h>
+#include <fcntl.h>
+#include <io.h>
+#include <windows.h>
+#endif  // #if RDF_PLATFORM_WINDOWS
+
 #include <algorithm>
 // We use map so we don't have to provide a hash function for chunkId, which
 // is a bit tricky with C++11 and old compilers
@@ -245,6 +255,11 @@ namespace internal
     std::unique_ptr<IStream> OpenFile(const char* filename,
                                       rdfStreamAccess access,
                                       rdfFileMode fileMode);
+
+    std::unique_ptr<IStream> OpenSharedFile(const char* filename,
+                                      rdfStreamAccess access,
+                                      rdfFileMode fileMode);
+
     std::unique_ptr<IStream> CreateFile(const char* filename);
 
     std::unique_ptr<IStream> CreateReadOnlyMemoryStream(const std::int64_t bufferSize,
@@ -1054,11 +1069,72 @@ namespace internal
     }
 
     //////////////////////////////////////////////////////////////////////
-    std::unique_ptr<IStream> OpenFile(const char* filename,
+    std::unique_ptr<IStream> OpenSharedFile(const char* filename,
+                                            rdfStreamAccess accessMode,
+                                            rdfFileMode fileMode)
+    {
+#if RDF_PLATFORM_WINDOWS
+        const char* mode = nullptr;
+
+        // For a shareable file on Windows, the file needs to be opened with the CreateFile() function.
+        unsigned long desired_access = 0;
+        unsigned long share_mode = FILE_SHARE_READ | FILE_SHARE_WRITE;
+        unsigned long creation_disposition = 0;
+        unsigned long flags_and_attributes = FILE_ATTRIBUTE_NORMAL;
+
+        if (accessMode == rdfStreamAccess::rdfStreamAccessRead) {
+            desired_access |= GENERIC_READ;
+            if (fileMode == rdfFileModeOpen) {
+                creation_disposition = OPEN_EXISTING;
+                mode = "rb";
+            } else if (fileMode == rdfFileModeCreate) {
+                throw std::runtime_error("Cannot create file in read-only mode");
+            }
+        } else if (accessMode == rdfStreamAccess::rdfStreamAccessReadWrite) {
+            desired_access |= GENERIC_READ | GENERIC_WRITE;
+            if (fileMode == rdfFileModeOpen) {
+                creation_disposition = OPEN_EXISTING;
+                mode = "r+b";
+            } else if (fileMode == rdfFileModeCreate) {
+                creation_disposition = OPEN_EXISTING;
+                mode = "w+b";
+            }
+        } else {
+            assert(false);
+        }
+
+        HANDLE object_handle = ::CreateFile(filename,
+                                            desired_access,
+                                            share_mode,
+                                            NULL,
+                                            creation_disposition,
+                                            flags_and_attributes,
+                                            NULL);
+
+        // Convert the object handle to a file descriptor.
+        int file_handle = _open_osfhandle((intptr_t)object_handle, _O_BINARY);
+        auto fd = _fdopen(file_handle, mode);
+        if (fd == nullptr) {
+            CloseHandle(object_handle);
+            throw std::runtime_error("Error opening file");
+        }
+
+        // Disable inheritance of the file handle.
+        SetHandleInformation(object_handle, HANDLE_FLAG_INHERIT, 0);
+        return rdf_make_unique<Filestream>(fd, accessMode);
+#else
+        return OpenFile(filename, accessMode, fileMode);
+#endif  // #if RDF_PLATFORM_WINDOWS
+    }
+
+
+
+        std::unique_ptr<IStream> OpenFile(const char* filename,
                                       rdfStreamAccess accessMode,
                                       rdfFileMode fileMode)
     {
         const char* mode = nullptr;
+
         if (accessMode == rdfStreamAccessRead) {
             if (fileMode == rdfFileModeOpen) {
                 mode = "rb";
@@ -1080,6 +1156,10 @@ namespace internal
             throw std::runtime_error("Could not open file");
         }
 
+#if RDF_PLATFORM_WINDOWS
+        // Disable inheritance of the file handle.
+        SetHandleInformation((HANDLE)_get_osfhandle(_fileno(fd)), HANDLE_FLAG_INHERIT, 0);
+#endif  // #if RDF_PLATFORM_WINDOWS
         return rdf_make_unique<Filestream>(fd, accessMode);
     }
 
@@ -1090,7 +1170,12 @@ namespace internal
         if (fd == nullptr) {
             throw std::runtime_error("Could not create file");
         }
-
+#if RDF_PLATFORM_WINDOWS
+        else {
+            // Disable inheritance of the file handle.
+            SetHandleInformation((HANDLE)_get_osfhandle(_fileno(fd)), HANDLE_FLAG_INHERIT, 0);
+        }
+#endif // #if RDF_PLATFORM_WINDOWS
         return rdf_make_unique<Filestream>(fd, rdfStreamAccessReadWrite);
     }
 
@@ -1155,8 +1240,7 @@ to open an existing file for read/write or create a new one.
 The creation file mode requires read/write access, as creating a new file
 for read-only would result in an unusable stream.
 */
-int RDF_EXPORT rdfStreamFromFile(const rdfStreamFromFileCreateInfo* info,
-    rdfStream** handle)
+int RDF_EXPORT rdfStreamFromFile(const rdfStreamFromFileCreateInfo* info, rdfStream** handle)
 {
     RDF_C_API_BEGIN
 
@@ -1174,8 +1258,16 @@ int RDF_EXPORT rdfStreamFromFile(const rdfStreamFromFileCreateInfo* info,
 
     *handle = new rdfStream;
     try {
-        (*handle)->stream =
-            rdf::internal::OpenFile(info->filename, info->accessMode, info->fileMode);
+        if (info->is_shareable)
+        {
+            (*handle)->stream =
+                rdf::internal::OpenSharedFile(info->filename, info->accessMode, info->fileMode);
+        }
+        else
+        {
+            (*handle)->stream =
+                rdf::internal::OpenFile(info->filename, info->accessMode, info->fileMode);
+        }
     } catch (...) {
         delete *handle;
         *handle = nullptr;

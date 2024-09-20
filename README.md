@@ -58,3 +58,5 @@ Patch releases (for example, `1.1.1`) will be bumped for bug fixes and other imp
   * Fix bug in `rdfm` which would incorrectly write the last chunk's data when merging an empty chunk.
   * Change validation for the `rdfChunkFileReadChunk*` read functions such that a `nullptr` for the `buffer` argument is valid if the requested size is 0. Previously, this would fail with an invalid argument error.
   * Remove support for [VCPKG](https://vcpkg.io/) again. Unfortunately, the upstream port file has never been finished, and the relatively intrusive support added in 1.2 caused more problems than it solved. If there's interest in re-adding VCPKG support, please open an issue or PR.
+* **1.4.0**
+  * Allow files to be opened in shareable mode. An 'is_shareable' flag has been added to the rdfStreamFromFileCreateInfo structure (default is false).
