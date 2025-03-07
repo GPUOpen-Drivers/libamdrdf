@@ -26,7 +26,7 @@
      (static_cast<std::uint32_t>(minor) << 12) | \
      (static_cast<std::uint32_t>(patch)))
 
-#define RDF_INTERFACE_VERSION RDF_MAKE_VERSION(1, 3, 0)
+#define RDF_INTERFACE_VERSION RDF_MAKE_VERSION(1, 4, 0)
 
 extern "C" {
 struct rdfChunkFile;

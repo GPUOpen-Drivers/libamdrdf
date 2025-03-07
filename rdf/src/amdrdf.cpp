@@ -57,7 +57,8 @@ namespace internal
     */
     bool CheckIsInSystemSizeRange(std::int64_t v)
     {
-        if (sizeof(size_t) == 4) {
+        constexpr bool size_t_is_4 = sizeof(size_t) == 4;
+        if (size_t_is_4) {
             return v <= static_cast<std::int64_t>(std::numeric_limits<std::uint32_t>::max());
         }
 
@@ -972,6 +973,9 @@ namespace internal
         std::int64_t WriteImpl(const std::int64_t offset,
             const std::int64_t count, const void* buffer) override
         {
+            (void)offset;
+            (void)count;
+            (void)buffer;
             assert(false);
             return 0;
         }

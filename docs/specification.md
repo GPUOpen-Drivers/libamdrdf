@@ -9,7 +9,7 @@ RDF files are structured as following:
 
 All offsets are relative to the file start. All sizes are in bytes. There is no requirement to put the chunk index at the end, but it's convenient for tools which generate RDF files so we expect the index to be at the end. Structures are assumed to be "C" packed.
 
-*must*, *should*, etc. is used in accordance with [RFC 2119](https://datatracker.ietf.org/doc/html/rfc2119)
+*must*, *should*, etc. is used in accordance with RFC 2119.
 
 ![RDF overview](rdf.svg)
 
